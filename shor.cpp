@@ -10,6 +10,15 @@
 #include "shor.h"
 #pragma warning(disable:4996)
 
+#define NT_SUCCESS(x) ((x) >= 0)
+
+typedef NTSTATUS(NTAPI* _NtQuerySystemInformation)(
+	ULONG SystemInformationClass,
+	PVOID SystemInformation,
+	ULONG SystemInformationLength,
+	PULONG ReturnLength
+	);
+
 BOOLEAN GetModuleBaseAddress(PCHAR Name, ULONG_PTR* lpBaseAddress) {
 	PRTL_PROCESS_MODULES ModuleInformation = NULL;
 	ULONG InformationSize = 16;
@@ -20,8 +29,12 @@ BOOLEAN GetModuleBaseAddress(PCHAR Name, ULONG_PTR* lpBaseAddress) {
 
 		ModuleInformation = (PRTL_PROCESS_MODULES)realloc(ModuleInformation, InformationSize);
 		memset(ModuleInformation, 0, InformationSize);
+		
+		_NtQuerySystemInformation NtQuerySystemInformation =
+			(_NtQuerySystemInformation)GetProcAddress(GetModuleHandleA("ntdll.dll"), "NtQuerySystemInformation");
 
-		NtStatus = NtQuerySystemInformation(SystemModuleInformation,
+		NtStatus = (NTSTATUS)NtQuerySystemInformation(
+			SystemModuleInformation,
 			ModuleInformation,
 			InformationSize,
 			NULL);
